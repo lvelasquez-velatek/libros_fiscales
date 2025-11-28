@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- FORMULARIO -->
+        <record id="view_libro_compras_periodo_form" model="ir.ui.view">
+            <field name="name">libro.compras.periodo.form</field>
+            <field name="model">libro.compras.periodo</field>
+            <field name="arch" type="xml">
+
+                <form string="Declaración de IVA Compras" edit="true" create="false">
+
+                    <header>
+                        <button name="action_load_invoices" string="Generar Detalle" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                        <button name="action_mark_done" string="Validar" type="object" class="btn-success" invisible="state != 'draft'"/>
+                        <button name="action_print_report" string="Imprimir PDF" type="object" class="btn-secondary"/>
+                        <button name="action_rectify" string="Rectificar" type="object" class="btn-warning" invisible="state != 'validated'"/>
+                        <button name="action_generate_excel" string="Generar Excel" type="object" class="btn-secondary"/>
+                        <button name="action_generate_csv" string="Generar CSV" type="object" class="btn-secondary"/>
+                        <field name="state" widget="statusbar"/>
+                    </header>
+
+                    <sheet>
+                        <!-- TÍTULO DINÁMICO -->
+                        <div class="oe_title">
+                            <h1>
+                                <field name="year_display" class="oe_inline"/>
+ - 
+                                <field name="periodo" readonly="1" class="oe_inline"/>
+                            </h1>
+                        </div>
+
+                        <group>
+                            <group>
+                                <field name="assistant_id"/>
+                                <field name="contador_name"/>
+                                <field name="company_id" readonly="1"/>
+                            </group>
+                            <group>
+                                <field name="incluir_sucursales"/>
+                                <field name="date" readonly="1"/>
+                                <field name="month"/>
+                                <field name="year" invisible="1"/>
+                            </group>
+                        </group>
+
+                        <group>
+                            <field name="comentarios" placeholder="Ingrese comentarios adicionales..."/>
+                        </group>
+
+                        <notebook>
+
+                            <!-- DETALLE COMPRAS -->
+                            <page string="Detalle Compras">
+                                <div class="mb-2">
+                                    <button name="action_select_all" string="Seleccionar Todo" type="object" class="btn btn-secondary btn-sm me-2"/>
+                                    <button name="action_unselect_all" string="Deseleccionar Todo" type="object" class="btn btn-secondary btn-sm"/>
+                                </div>
+                                <field name="invoice_line_ids" nolabel="1" readonly="state != 'draft'">
+                                    <list>
+                                        <!-- Campo de moneda necesario para los totales -->
+                                        <field name="currency_id" column_invisible="1"/>
+                                        <field name="sequence" string="No"/>
+                                        <field name="invoice_date"/>
+                                        <field name="numero_documento"/>
+                                        <field name="numero_control" optional="hide"/>
+                                        <field name="codigo_generacion"/>
+                                        <field name="sello_digital" optional="hide"/>
+                                        <field name="partner_id"/>
+
+                                        <field name="compras_internas_exentas" sum="Total Internas Exentas"/>
+                                        <field name="compras_internas_gravadas" sum="Total Internas Gravadas"/>
+                                        <field name="credito_fiscal" sum="Total Crédito Fiscal"/>
+                                        <field name="amount_total" sum="Total General"/>
+                                        <field name="select" string="Seleccionar"/>
+                                    </list>
+                                </field>
+                            </page>
+
+                            <!-- RESUMEN COMPRAS -->
+                            <page string="Resumen Compras">
+                                <group>
+                                    <field name="total_internas_exentas"/>
+                                    <field name="total_internas_gravadas"/>
+                                    <field name="total_credito_fiscal"/>
+                                </group>
+                            </page>
+                        </notebook>
+                    </sheet>
+                    <chatter/>
+                </form>
+            </field>
+        </record>
+
+        <!-- FORMULARIO LÍNEA DE COMPRAS (POPUP) -->
+        <record id="view_libro_compras_line_form" model="ir.ui.view">
+            <field name="name">libro.compras.line.form</field>
+            <field name="model">libro.compras.line</field>
+            <field name="arch" type="xml">
+                <form string="Detalle de Factura">
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="periodo_id" readonly="1"/>
+                                <field name="move_id" readonly="1"/>
+                                <field name="partner_id" readonly="1"/>
+                            </group>
+                            <group>
+                                <field name="sequence" readonly="1"/>
+                                <field name="numero_documento" readonly="1"/>
+                            </group>
+                        </group>
+
+                        <group string="Información DTE">
+                            <field name="invoice_date" readonly="1"/>
+                            <field name="codigo_generacion" readonly="1"/>
+                            <field name="numero_control" readonly="1"/>
+                            <field name="sello_digital" readonly="1"/>
+                            <field name="clase_documento"/>
+                            <field name="tipo_documento_nombre" readonly="1"/>
+                        </group>
+
+                        <group string="Montos">
+                            <group>
+                                <field name="compras_internas_exentas" readonly="1"/>
+                                <field name="compras_internas_gravadas" readonly="1"/>
+                            </group>
+                            <group>
+                                <field name="credito_fiscal" readonly="1"/>
+                                <field name="amount_total" readonly="1"/>
+                            </group>
+                        </group>
+
+                        <group string="Clasificación Fiscal (Hacienda)" col="4">
+                            <field name="tipo_operacion"/>
+                            <field name="clasificacion"/>
+                            <field name="sector"/>
+                            <field name="tipo_costo_gasto"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- LISTA DE PERIODOS -->
+        <record id="view_libro_compras_periodo_list" model="ir.ui.view">
+            <field name="name">libro.compras.periodo.list</field>
+            <field name="model">libro.compras.periodo</field>
+            <field name="arch" type="xml">
+                <list string="Libros IVA Compra">
+                    <header>
+                        <button name="%(action_libro_compras_wizard)d" string="Crear Libro de Compras" type="action" class="btn-primary"/>
+                    </header>
+                    <field name="assistant_id"/>
+                    <field name="contador_name"/>
+                    <field name="company_id"/>
+                    <field name="date"/>
+                    <field name="month"/>
+                    <field name="year"/>
+                    <field name="periodo"/>
+                    <field name="state"/>
+                </list>
+            </field>
+        </record>
+    </data>
+</odoo>

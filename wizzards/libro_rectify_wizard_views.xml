@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_libro_rectify_wizard_form" model="ir.ui.view">
+        <field name="name">libro.rectify.wizard.form</field>
+        <field name="model">libro.rectify.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Rectificar Libro">
+                <group>
+                    <field name="reason" placeholder="Describa el motivo por el cual necesita rectificar este libro..."/>
+                </group>
+                <footer>
+                    <button name="action_confirm" string="Confirmar" type="object" class="btn-primary"/>
+                    <button string="Cancelar" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_libro_rectify_wizard" model="ir.actions.act_window">
+        <field name="name">Rectificar Libro</field>
+        <field name="res_model">libro.rectify.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

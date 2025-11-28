@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+
+    <!-- Paperformat horizontal para Libro de Ventas -->
+    <record id="paperformat_libro_ventas_landscape" model="report.paperformat">
+      <field name="name">Libro de Ventas - Horizontal</field>
+      <!-- A4 o Letter, elige lo que uses -->
+      <field name="format">Letter</field>
+      <!-- Orientación horizontal -->
+      <field name="orientation">Landscape</field>
+
+      <!-- Márgenes en milímetros (ajústalos a tu gusto) -->
+      <field name="margin_top">8</field>
+      <field name="margin_bottom">8</field>
+      <field name="margin_left">8</field>
+      <field name="margin_right">8</field>
+
+      <!-- Opcionales -->
+      <field name="header_line" eval="False"/>
+      <field name="header_spacing">0</field>
+    </record>
+
+  </data>
+</odoo>

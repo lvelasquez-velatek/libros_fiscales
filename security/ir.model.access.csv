@@ -1,0 +1,14 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_libro_compras_wizard_user,Libro Compras Wizard Usuario,model_libro_compras_wizard,base.group_user,1,1,1,0
+access_libro_compras_wizard_mgr,Libro Compras Wizard Manager,model_libro_compras_wizard,account.group_account_manager,1,1,1,1
+access_libro_ventas_wizard_user,Libro Ventas Wizard Usuario,model_libro_ventas_wizard,base.group_user,1,1,1,0
+access_libro_ventas_wizard_mgr,Libro Ventas Wizard Manager,model_libro_ventas_wizard,account.group_account_manager,1,1,1,1
+access_libro_compras_periodo_user,Libro Compras Usuario,model_libro_compras_periodo,base.group_user,1,0,0,0
+access_libro_compras_periodo_manager,Libro Compras Manager,model_libro_compras_periodo,account.group_account_manager,1,1,1,1
+access_libro_compras_line_user,Libro Compras Línea Usuario,model_libro_compras_line,base.group_user,1,0,0,0
+access_libro_compras_line_manager,Libro Compras Línea Manager,model_libro_compras_line,account.group_account_manager,1,1,1,1
+access_libro_ventas_periodo_user,Libro Ventas Periodo Usuario,model_libro_ventas_periodo,base.group_user,1,0,0,0
+access_libro_ventas_periodo,libro.ventas.periodo,model_libro_ventas_periodo,base.group_user,1,1,1,1
+access_libro_ventas_line,libro.ventas.line,model_libro_ventas_line,base.group_user,1,1,1,1
+access_libro_rectify_wizard,libro.rectify.wizard,model_libro_rectify_wizard,base.group_user,1,1,1,1
+access_libro_ventas_line_manager,Libro Ventas Línea Manager,model_libro_ventas_line,account.group_account_manager,1,1,1,1

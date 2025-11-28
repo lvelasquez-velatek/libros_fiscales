@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- ========================================= -->
+        <!-- CONSUMIDOR FINAL -->
+        <!-- ========================================= -->
+
+        <!-- Vista del Wizard Consumidor Final -->
+        <record id="view_libro_consumidor_wizard_form" model="ir.ui.view">
+            <field name="name">libro.ventas.wizard.consumidor.form</field>
+            <field name="model">libro.ventas.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Crear Libro de Consumidor Final">
+                    <sheet>
+                        <group>
+                            <field name="company_id"/>
+                            <field name="month"/>
+                            <field name="year" widget="integer"/>
+                            <field name="incluir_sucursales"/>
+                            <field name="contador_name"/>
+                            <field name="periodo" readonly="1"/>
+                            <field name="tipo_libro" invisible="1"/>
+                        </group>
+                    </sheet>
+                    <footer>
+                        <button name="action_create_periodo" string="Guardar" type="object" class="btn-primary"/>
+                        <button string="Cancelar" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <!-- Acción del Wizard Consumidor Final -->
+        <record id="action_libro_consumidor_wizard" model="ir.actions.act_window">
+            <field name="name">Nuevo Libro de Consumidor Final</field>
+            <field name="res_model">libro.ventas.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+            <field name="view_id" ref="view_libro_consumidor_wizard_form"/>
+            <field name="context">{'default_tipo_libro': 'consumidor'}</field>
+        </record>
+
+        <!-- Acción Principal Consumidor Final -->
+        <record id="action_libro_consumidor_periodo_view" model="ir.actions.act_window">
+            <field name="name">Libro Consumidor Final</field>
+            <field name="res_model">libro.ventas.periodo</field>
+            <field name="view_mode">list,form</field>
+            <field name="domain">[('tipo_libro', '=', 'consumidor')]</field>
+            <field name="context">{'default_tipo_libro': 'consumidor'}</field>
+        </record>
+
+        <!-- Vista Lista con botón para Consumidor Final -->
+        <record id="view_libro_consumidor_periodo_list" model="ir.ui.view">
+            <field name="name">libro.ventas.periodo.consumidor.list</field>
+            <field name="model">libro.ventas.periodo</field>
+            <field name="mode">primary</field>
+            <field name="priority">10</field>
+            <field name="arch" type="xml">
+                <list string="Libro Consumidor Final">
+                    <header>
+                        <button name="%(action_libro_consumidor_wizard)d" string="Crear Libro de Consumidor Final" type="action" class="btn-primary"/>
+                    </header>
+                    <field name="assistant_id"/>
+                    <field name="contador_name"/>
+                    <field name="company_id"/>
+                    <field name="date"/>
+                    <field name="periodo"/>
+                    <field name="state"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- Menú Consumidor Final -->
+        <menuitem id="menu_libro_consumidor" name="Ventas (Consumidor)" parent="menu_libros_iva_root" action="action_libro_consumidor_periodo_view" sequence="2"/>
+
+        <!-- ========================================= -->
+        <!-- CRÉDITO FISCAL -->
+        <!-- ========================================= -->
+
+        <!-- Vista del Wizard Crédito Fiscal -->
+        <record id="view_libro_credito_wizard_form" model="ir.ui.view">
+            <field name="name">libro.ventas.wizard.credito.form</field>
+            <field name="model">libro.ventas.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Crear Libro de Crédito Fiscal">
+                    <sheet>
+                        <group>
+                            <field name="company_id"/>
+                            <field name="month"/>
+                            <field name="year" widget="integer"/>
+                            <field name="incluir_sucursales"/>
+                            <field name="contador_name"/>
+                            <field name="periodo" readonly="1"/>
+                            <field name="tipo_libro" invisible="1"/>
+                        </group>
+                    </sheet>
+                    <footer>
+                        <button name="action_create_periodo" string="Guardar" type="object" class="btn-primary"/>
+                        <button string="Cancelar" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <!-- Acción del Wizard Crédito Fiscal -->
+        <record id="action_libro_credito_wizard" model="ir.actions.act_window">
+            <field name="name">Nuevo Libro de Crédito Fiscal</field>
+            <field name="res_model">libro.ventas.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+            <field name="view_id" ref="view_libro_credito_wizard_form"/>
+            <field name="context">{'default_tipo_libro': 'credito'}</field>
+        </record>
+
+        <!-- Acción Principal Crédito Fiscal -->
+        <record id="action_libro_credito_periodo_view" model="ir.actions.act_window">
+            <field name="name">Libro Crédito Fiscal</field>
+            <field name="res_model">libro.ventas.periodo</field>
+            <field name="view_mode">list,form</field>
+            <field name="domain">[('tipo_libro', '=', 'credito')]</field>
+            <field name="context">{'default_tipo_libro': 'credito'}</field>
+        </record>
+
+        <!-- Vista Lista con botón para Crédito Fiscal -->
+        <record id="view_libro_credito_periodo_list" model="ir.ui.view">
+            <field name="name">libro.ventas.periodo.credito.list</field>
+            <field name="model">libro.ventas.periodo</field>
+            <field name="mode">primary</field>
+            <field name="priority">10</field>
+            <field name="arch" type="xml">
+                <list string="Libro Crédito Fiscal">
+                    <header>
+                        <button name="%(action_libro_credito_wizard)d" string="Crear Libro de Crédito Fiscal" type="action" class="btn-primary"/>
+                    </header>
+                    <field name="assistant_id"/>
+                    <field name="contador_name"/>
+                    <field name="company_id"/>
+                    <field name="date"/>
+                    <field name="periodo"/>
+                    <field name="state"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- Menú Crédito Fiscal -->
+        <menuitem id="menu_libro_credito" name="Ventas (Crédito)" parent="menu_libros_iva_root" action="action_libro_credito_periodo_view" sequence="3"/>
+
+    </data>
+</odoo>

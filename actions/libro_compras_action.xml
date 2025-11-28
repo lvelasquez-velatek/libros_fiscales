@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- VISTA DEL WIZARD -->
+        <record id="view_libro_compras_wizard_form" model="ir.ui.view">
+            <field name="name">libro.compras.wizard.form</field>
+            <field name="model">libro.compras.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Crear Libro de Compras">
+                    <sheet>
+                        <group>
+                            <field name="company_id"/>
+                            <field name="month"/>
+                            <field name="incluir_sucursales"/>
+                            <field name="year" widget="integer"/>
+                            <field name="contador_name"/>
+                            <field name="periodo" readonly="1"/>
+                        </group>
+                    </sheet>
+                    <footer>
+                        <button name="action_create_periodo" string="Guardar" type="object" class="btn-primary"/>
+                        <button string="Cancelar" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <!-- ACCIÓN DEL WIZARD -->
+        <record id="action_libro_compras_wizard" model="ir.actions.act_window">
+            <field name="name">Nuevo Libro de Compras</field>
+            <field name="res_model">libro.compras.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+            <field name="view_id" ref="view_libro_compras_wizard_form"/>
+        </record>
+
+        <!-- ACCIÓN PRINCIPAL -->
+        <record id="action_libro_compras_periodo_view" model="ir.actions.act_window">
+            <field name="name">Declaración de IVA Compras</field>
+            <field name="res_model">libro.compras.periodo</field>
+            <field name="view_mode">list,form</field>
+        </record>
+
+        <!-- MENÚ PRINCIPAL -->
+        <menuitem id="menu_libros_iva_root" name="Libros de IVA" parent="account.menu_finance_reports" sequence="100"/>
+
+        <menuitem id="menu_libro_compras" name="Libro de Compras" parent="menu_libros_iva_root" action="action_libro_compras_periodo_view" sequence="1"/>
+    </data>
+</odoo>

@@ -336,6 +336,9 @@ class LibroComprasPeriodo(models.Model):
         # Forzar recalculo de totales
         self.invalidate_recordset(['invoice_line_ids'])
         
+        # Seleccionar automáticamente todas las líneas cargadas
+        self.invoice_line_ids.write({'select': True})
+        
         # No retornar nada para que Odoo refresque la vista automáticamente
 
     def _get_document_type(self, invoice):

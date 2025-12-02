@@ -10,9 +10,9 @@
                 <form string="Declaración de IVA Compras" edit="true" create="false">
 
                     <header>
-                        <button name="action_load_invoices" string="Generar Detalle" type="object" class="btn-primary" invisible="state != 'draft'"/>
-                        <button name="action_mark_done" string="Validar" type="object" class="btn-success" invisible="state != 'draft'"/>
                         <button name="action_print_report" string="Imprimir PDF" type="object" class="btn-secondary"/>
+                        <button name="action_mark_done" string="Validar" type="object" class="btn-success" invisible="state != 'draft'"/>
+                        <button name="action_load_invoices" string="Generar Detalle" type="object" class="btn-primary" invisible="state != 'draft'"/>
                         <button name="action_rectify" string="Rectificar" type="object" class="btn-warning" invisible="state != 'validated'"/>
                         <button name="action_generate_excel" string="Generar Excel" type="object" class="btn-secondary"/>
                         <button name="action_generate_csv" string="Generar CSV" type="object" class="btn-secondary"/>

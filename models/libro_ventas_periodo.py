@@ -161,6 +161,7 @@ class LibroVentasPeriodo(models.Model):
     def _compute_totales(self):
         for rec in self:
             rec.total_ventas_exentas = sum(rec.invoice_line_ids.mapped("ventas_exentas"))
+            # Sumar ventas_gravadas (subtotal sin IVA) para mostrar en Odoo
             rec.total_ventas_gravadas = sum(rec.invoice_line_ids.mapped("ventas_gravadas"))
             rec.total_debito_fiscal = sum(rec.invoice_line_ids.mapped("debito_fiscal"))
 
@@ -213,21 +214,24 @@ class LibroVentasPeriodo(models.Model):
 
         # Definir tipos de documentos según el libro
         if self.tipo_libro == 'consumidor':
-            # Facturas (01) y Notas de Crédito/Débito relacionadas a Consumidor
-            # Nota: Ajustar códigos según la localización real si difieren
-            allowed_doc_types = ['01', '05', '06'] 
+            # Consumidor Final: Solo 01, 02, 10, 11 según manual Hacienda
+            # Las notas de crédito/débito NO son válidas en Anexo 2
+            allowed_doc_types = ['01', '02', '10', '11']
+            # IMPORTANTE: Para consumidor final NO incluir out_refund
+            move_types = ['out_invoice']
         else:
             # Crédito Fiscal (03) y Notas de Crédito/Débito relacionadas
             allowed_doc_types = ['03', '05', '06']
+            move_types = ['out_invoice', 'out_refund']
 
         # --- 1. CARGAR FACTURAS VALIDAS (POSTED) ---
         invoices = self.env['account.move'].search([
-            ('move_type', 'in', ['out_invoice', 'out_refund']),
+            ('move_type', 'in', move_types),
             ('state', '=', 'posted'),
             ('invoice_date', '>=', date_from),
             ('invoice_date', '<=', date_to),
             ('company_id', 'in', company_ids),
-        ])
+        ], order='invoice_date asc, name asc, id asc')
 
         lines_values = []
         sequence = 1
@@ -245,24 +249,54 @@ class LibroVentasPeriodo(models.Model):
             sello_recepcion = inv.tgr_l10n_sv_edi_sello_recibido or ''
             tipo_documento = inv.l10n_latam_document_type_id.code or ''
 
-            # Montos: desglosar según tipo de impuesto
+
+
+            # Montos: DIFERENCIA ENTRE CONSUMIDOR FINAL Y CRÉDITO FISCAL
+            # - Consumidor Final: IVA incluido en precio → reportar monto TOTAL
+            # - Crédito Fiscal: IVA separado → reportar solo SUBTOTAL sin IVA
             ventas_exentas = 0.0
             ventas_gravadas = 0.0
             debito_fiscal = 0.0
+            
+            # Nuevos campos para CSV Hacienda
+            ventas_exentas_no_sujetas = 0.0
+            ventas_no_sujetas = 0.0
+            ventas_gravadas_locales = 0.0
+            exportaciones_centroamerica = 0.0
+            exportaciones_fuera_centroamerica = 0.0
+            exportaciones_servicios = 0.0
+            ventas_zonas_francas = 0.0
+            ventas_cuenta_terceros = 0.0
 
-            # Iterar líneas de la factura para calcular montos
-            for line in inv.invoice_line_ids:
-                amount_line = line.price_subtotal
 
-                # Determinar si es exento o gravado según impuesto
-                if line.tax_ids:
-                    # Si tiene impuesto, es gravado
-                    ventas_gravadas += amount_line
-                    # Débito fiscal = el monto del impuesto
-                    debito_fiscal += line.price_total - amount_line
-                else:
-                    # Si no tiene impuesto, es exento
-                    ventas_exentas += amount_line
+            # Determinar si la factura tiene impuestos y si están incluidos en precio
+            has_taxes = any(line.tax_ids for line in inv.invoice_line_ids)
+            
+            if has_taxes:
+                # Verificar si ALGÚN impuesto tiene price_include=True (Consumidor Final)
+                tax_ids = inv.invoice_line_ids.mapped('tax_ids')
+                price_include = any(tax.price_include for tax in tax_ids)
+                
+                # Para TODOS los casos (consumidor y crédito):
+                # ventas_gravadas y ventas_gravadas_locales = SUBTOTAL sin IVA
+                ventas_gravadas = inv.amount_untaxed
+                ventas_gravadas_locales = inv.amount_untaxed
+                debito_fiscal = inv.amount_total - inv.amount_untaxed
+            else:
+                # Facturas sin impuesto son exentas
+                ventas_exentas = inv.amount_untaxed
+                ventas_gravadas = 0.0
+                ventas_gravadas_locales = 0.0
+                debito_fiscal = 0.0
+            
+            # Si es factura de exportación (11), mover a exportaciones
+            if tipo_documento == '11':
+                # Por defecto a fuera de CA, usuario puede cambiarlo
+                exportaciones_fuera_centroamerica = inv.amount_total if price_include else inv.amount_untaxed
+                ventas_gravadas_locales = 0.0
+                ventas_gravadas = 0.0
+                ventas_exentas = 0.0
+                debito_fiscal = 0.0  # Exportaciones no tienen débito fiscal
 
             # Crear diccionario para la línea
             lines_values.append({
@@ -277,14 +311,27 @@ class LibroVentasPeriodo(models.Model):
                 'sello_recepcion': sello_recepcion,
                 'tipo_documento': tipo_documento,
                 'ventas_exentas': ventas_exentas,
-                'ventas_gravadas': ventas_gravadas,
+                'ventas_gravadas': ventas_gravadas, # Mantener para compatibilidad
                 'debito_fiscal': debito_fiscal,
                 'amount_total': inv.amount_total,
+                # Nuevos campos
+                'ventas_exentas_no_sujetas': ventas_exentas_no_sujetas,
+                'ventas_no_sujetas': ventas_no_sujetas,
+                'ventas_gravadas_locales': ventas_gravadas_locales,
+                'exportaciones_centroamerica': exportaciones_centroamerica,
+                'exportaciones_fuera_centroamerica': exportaciones_fuera_centroamerica,
+                'exportaciones_servicios': exportaciones_servicios,
+                'ventas_zonas_francas': ventas_zonas_francas,
+                'ventas_cuenta_terceros': ventas_cuenta_terceros,
+                'select': True,  # Auto-seleccionar al cargar
             })
             sequence += 1
 
         # Crear líneas de facturas válidas
         self.env['libro.ventas.line'].create(lines_values)
+        
+        # Forzar recálculo de totales (igual que en compras)
+        self.invalidate_recordset(['invoice_line_ids'])
 
         # --- 2. CARGAR FACTURAS ANULADAS (CANCEL) ---
         cancelled_invoices = self.env['account.move'].search([
@@ -421,50 +468,228 @@ class LibroVentasPeriodo(models.Model):
 
     def action_generate_csv(self):
         """Generar CSV con las facturas seleccionadas."""
+        # Si es Consumidor Final, usar formato Hacienda (Anexo 2)
+        if self.tipo_libro == 'consumidor':
+            return self.action_generate_csv_consumidor()
+            
+        # CRÉDITO FISCAL: Formato Hacienda Anexo 1 (20 columnas A-T)
         selected = self.invoice_line_ids.filtered(lambda l: l.select)
         if not selected:
             raise UserError("Debe seleccionar al menos una factura.")
 
         output = io.StringIO()
-        writer = csv.writer(output)
+        writer = csv.writer(output, delimiter=';')  # Separador punto y coma
 
-        # Encabezados
-        writer.writerow([
-            'No',
-            'Fecha Emisión',
-            'Número de Documento',
-            'Número de Control',
-            'Código Generación',
-            'Sello Recepción',
-            'Cliente',
-            'Ventas Exentas',
-            'Ventas Gravadas',
-            'Débito Fiscal',
-            'Total'
-        ])
-
-        # Filas de datos
+        # SIN encabezados según manual oficial
+        
+        # Generar filas de datos (20 columnas: A-T)
         for line in selected:
+            # A. Fecha Emisión (DD/MM/YYYY)
+            fecha_str = line.invoice_date.strftime('%d/%m/%Y') if line.invoice_date else ''
+            
+            # B. Clase de Documento (1=Impreso, 4=DTE)
+            clase_doc = '4' if line.codigo_generacion else '1'
+            
+            # C. Tipo de Documento (03=CCF, 05=NC, 06=ND)
+            tipo_doc = line.tipo_documento or '03'
+            
+            # D. Número de Resolución (para DTE: número de control sin guiones)
+            if line.codigo_generacion:
+                # DTE: número de control sin guiones
+                numero_resolucion = (line.numero_control or '').replace('-', '')
+            else:
+                # Impreso: número de resolución real
+                numero_resolucion = 'N/A'  # Ajustar según tu sistema
+            
+            # E. Número de Serie (para DTE: sello de recepción)
+            if line.codigo_generacion:
+                numero_serie = line.sello_recepcion or ''
+            else:
+                numero_serie = 'SERIE'  # Ajustar según tu sistema
+            
+            # F. Número de Documento (para DTE: código de generación sin guiones)
+            if line.codigo_generacion:
+                numero_documento = line.codigo_generacion.replace('-', '')
+            else:
+                numero_documento = line.numero_documento or ''
+            
+            # G. Número de Control Interno (para DTE: dejar en blanco)
+            if line.codigo_generacion:
+                control_interno = ''
+            else:
+                control_interno = line.numero_control or line.numero_documento or ''
+            
+            # H. NIT o NRC del Cliente (sin guiones)
+            # Obtener NIT o NRC del partner
+            nit_nrc = ''
+            if line.partner_id:
+                # Buscar VAT (NIT) del partner
+                if line.partner_id.vat:
+                    nit_nrc = line.partner_id.vat.replace('-', '').replace('/', '')
+            
+            # I. Nombre del Cliente
+            nombre_cliente = line.partner_id.name or ''
+            
+            # J. Ventas Exentas
+            ventas_exentas = f"{line.ventas_exentas:.2f}"
+            
+            # K. Ventas No Sujetas
+            ventas_no_sujetas = "0.00"  # Ajustar si tienes este campo
+            
+            # L. Ventas Gravadas Locales
+            ventas_gravadas = f"{line.ventas_gravadas:.2f}"
+            
+            # M. Débito Fiscal
+            debito_fiscal = f"{line.debito_fiscal:.2f}"
+            
+            # N. Ventas a Cuenta de Terceros
+            ventas_terceros = "0.00"  # Ajustar si tienes este campo
+            
+            # O. Débito Fiscal por Venta a Terceros
+            debito_terceros = "0.00"  # Ajustar si tienes este campo
+            
+            # P. Total Ventas
+            total_ventas = f"{line.amount_total:.2f}"
+            
+            # Q. DUI del Cliente (9 dígitos, opcional)
+            dui_cliente = ''  # Ajustar si tienes este campo en partner
+            
+            # R. Tipo de Operación (Renta) - desde Enero 2025
+            tipo_operacion = line.tipo_operacion_renta or '1'
+            
+            # S. Tipo de Ingreso (Renta) - desde Enero 2025
+            tipo_ingreso = line.tipo_ingreso_renta or '3'
+            
+            # T. Número de Anexo (siempre 1 para crédito fiscal)
+            numero_anexo = '1'
+            
             writer.writerow([
-                line.sequence or '',
-                line.invoice_date or '',
-                line.numero_documento or '',
-                line.numero_control or '',
-                line.codigo_generacion or '',
-                line.sello_recepcion or '',
-                line.partner_id.name or '',
-                line.ventas_exentas or 0,
-                line.ventas_gravadas or 0,
-                line.debito_fiscal or 0,
-                line.amount_total or 0,
+                fecha_str,          # A
+                clase_doc,          # B
+                tipo_doc,           # C
+                numero_resolucion,  # D
+                numero_serie,       # E
+                numero_documento,   # F
+                control_interno,    # G
+                nit_nrc,            # H
+                nombre_cliente,     # I
+                ventas_exentas,     # J
+                ventas_no_sujetas,  # K
+                ventas_gravadas,    # L
+                debito_fiscal,      # M
+                ventas_terceros,    # N
+                debito_terceros,    # O
+                total_ventas,       # P
+                dui_cliente,        # Q
+                tipo_operacion,     # R
+                tipo_ingreso,       # S
+                numero_anexo,       # T
             ])
 
-        data = base64.b64encode(output.getvalue().encode())
+        data = base64.b64encode(output.getvalue().encode('utf-8'))
         output.close()
 
-        tipo_nombre = 'Consumidor_Final' if self.tipo_libro == 'consumidor' else 'Credito_Fiscal'
         attachment = self.env['ir.attachment'].create({
-            'name': f'Libro_Ventas_{tipo_nombre}_{self.periodo or ""}.csv',
+            'name': f'Libro_Ventas_Credito_Fiscal_Hacienda_{self.periodo or ""}.csv',
+            'type': 'binary',
+            'datas': data,
+            'res_model': self._name,
+            'res_id': self.id,
+            'mimetype': 'text/csv'
+        })
+        return {
+            'type': 'ir.actions.act_url',
+            'url': f'/web/content/{attachment.id}?download=true',
+            'target': 'self',
+        }
+
+    def action_generate_csv_consumidor(self):
+        """Generar CSV formato oficial Hacienda (Anexo 2 - Consumidor Final)."""
+        # Para Consumidor Final, incluir TODAS las líneas del periodo
+        # (no depender del campo 'select' que solo afecta las líneas visibles en la vista)
+        selected = self.invoice_line_ids
+        if not selected:
+            raise UserError("No hay facturas para exportar. Genere el detalle primero.")
+
+        output = io.StringIO()
+        writer = csv.writer(output, delimiter=';')  # Separador punto y coma
+        
+        # SIN ENCABEZADOS según requerimiento (el ejemplo los muestra pero dice "no deben contener encabezados")
+        # El usuario dijo "ejemplo csv" y mostró datos sin encabezados.
+        
+        # Procesar filas - CADA FACTURA ES UNA LÍNEA INDIVIDUAL
+        # No agrupar por fecha, cada DTE tiene su código de generación único
+        rows = []
+        
+        # Procesar todas las líneas individualmente
+        for line in selected:
+            # Si es DTE (tiene código de generación)
+            if line.codigo_generacion:
+                # Clase 4 = DTE
+                clase = '4'
+                # Para DTEs: columnas H e I son el código de generación (Del y Al son iguales para una factura individual)
+                doc_del = line.codigo_generacion
+                doc_al = line.codigo_generacion
+                # Columnas D-G son N/A para DTEs
+                resolucion = 'N/A'
+                serie = 'N/A'
+                control_del = 'N/A'
+                control_al = 'N/A'
+            else:
+                # Clase 1 = Impreso (puede ser 2 = Formulario según tipo)
+                clase = '1'
+                # Para documentos impresos: columnas H e I son el número de documento
+                doc_del = line.numero_documento or ''
+                doc_al = line.numero_documento or ''
+                # Columnas D-G son la resolución, serie y número de control
+                resolucion = 'RESOLUCION'  # TODO: agregar campo en el modelo si es necesario
+                serie = 'SERIE'            # TODO: agregar campo en el modelo si es necesario
+                control_del = line.numero_control or ''
+                control_al = line.numero_control or ''
+            
+            # Calcular total como suma de columnas
+            total_calculado = (line.ventas_exentas + line.ventas_exentas_no_sujetas + 
+                             line.ventas_no_sujetas + line.ventas_gravadas_locales + 
+                             line.exportaciones_centroamerica + line.exportaciones_fuera_centroamerica + 
+                             line.exportaciones_servicios + line.ventas_zonas_francas + 
+                             line.ventas_cuenta_terceros)
+            
+            row = [
+                line.invoice_date.strftime('%d/%m/%Y'), # A. Fecha
+                clase,                                  # B. Clase (4=DTE, 1=Impreso)
+                line.tipo_documento or '01',            # C. Tipo de Documento
+                resolucion,                             # D. Resolución
+                serie,                                  # E. Serie
+                control_del,                            # F. Control Del
+                control_al,                             # G. Control Al
+                doc_del,                                # H. Doc Del (Código Gen o Num Doc)
+                doc_al,                                 # I. Doc Al (Código Gen o Num Doc)
+                '',                                     # J. Máquina (vacío)
+                f"{line.ventas_exentas:.2f}",           # K
+                f"{line.ventas_exentas_no_sujetas:.2f}",# L
+                f"{line.ventas_no_sujetas:.2f}",        # M
+                f"{line.amount_total:.2f}",             # N (Total con IVA para consumidor)
+                f"{line.exportaciones_centroamerica:.2f}", # O
+                f"{line.exportaciones_fuera_centroamerica:.2f}", # P
+                f"{line.exportaciones_servicios:.2f}",  # Q
+                f"{line.ventas_zonas_francas:.2f}",     # R
+                f"{line.ventas_cuenta_terceros:.2f}",   # S
+                f"{total_calculado:.2f}",               # T (calculado, no amount_total)
+                line.tipo_operacion_renta or '1',       # U
+                line.tipo_ingreso_renta or '3',         # V
+                '2'                                     # W. Anexo (2)
+            ]
+            rows.append(row)
+
+        # Escribir filas
+        for row in rows:
+            writer.writerow(row)
+
+        data = base64.b64encode(output.getvalue().encode('utf-8'))
+        output.close()
+
+        attachment = self.env['ir.attachment'].create({
+            'name': f'Libro_Ventas_Consumidor_Hacienda_{self.periodo or ""}.csv',
             'type': 'binary',
             'datas': data,
             'res_model': self._name,

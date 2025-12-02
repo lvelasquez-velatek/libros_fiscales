@@ -67,18 +67,34 @@
                                 <field name="invoice_line_ids" readonly="state == 'validated'">
                                     <list string="Facturas" create="false">
                                         <field name="currency_id" column_invisible="1"/>
-                                        <field name="select"/>
-                                        <field name="sequence" widget="handle"/>
+                                        <field name="sequence" string="ID" readonly="1"/>
+                                        <field name="move_id" string="Factura" optional="show"/>
                                         <field name="invoice_date"/>
                                         <field name="numero_documento"/>
-                                        <field name="numero_control"/>
+                                        <field name="numero_control" optional="hide"/>
                                         <field name="codigo_generacion"/>
-                                        <field name="sello_recepcion"/>
+                                        <field name="sello_recepcion" optional="hide"/>
                                         <field name="partner_id"/>
-                                        <field name="ventas_exentas" sum="Total Exento"/>
-                                        <field name="ventas_gravadas" sum="Total Gravado"/>
+
+
+                                        <!-- Campos Hacienda -->
+                                        <field name="ventas_exentas" sum="Total Exento" optional="show"/>
+                                        <field name="ventas_exentas_no_sujetas" optional="hide"/>
+                                        <field name="ventas_no_sujetas" optional="hide"/>
+                                        <field name="ventas_gravadas" sum="Total Gravado" string="Gravadas Locales"/>
+                                        <field name="exportaciones_centroamerica" optional="hide"/>
+                                        <field name="exportaciones_fuera_centroamerica" optional="hide"/>
+                                        <field name="exportaciones_servicios" optional="hide"/>
+                                        <field name="ventas_zonas_francas" optional="hide"/>
+                                        <field name="ventas_cuenta_terceros" optional="hide"/>
+
                                         <field name="debito_fiscal" sum="Total Débito"/>
                                         <field name="amount_total" sum="Total"/>
+
+                                        <field name="tipo_operacion_renta" optional="hide"/>
+                                        <field name="tipo_ingreso_renta" optional="hide"/>
+
+                                        <field name="select"/>
                                     </list>
                                 </field>
                             </page>
@@ -89,6 +105,7 @@
                                     <list string="Facturas Anuladas" create="false" delete="false" edit="false">
                                         <field name="currency_id" column_invisible="1"/>
                                         <field name="sequence"/>
+                                        <field name="move_id" string="Factura"/>
                                         <field name="invoice_date"/>
                                         <field name="numero_documento"/>
                                         <field name="numero_control"/>
@@ -99,7 +116,6 @@
                                         <field name="ventas_gravadas" sum="Total Gravado"/>
                                         <field name="debito_fiscal" sum="Total Débito"/>
                                         <field name="amount_total" sum="Total"/>
-                                        <field name="move_id" invisible="1"/>
                                     </list>
                                 </field>
                             </page>
@@ -154,6 +170,13 @@
                             <group>
                                 <field name="debito_fiscal" readonly="1"/>
                                 <field name="amount_total" readonly="1"/>
+                            </group>
+                        </group>
+
+                        <group string="Clasificación Renta (2025)">
+                            <group>
+                                <field name="tipo_operacion_renta"/>
+                                <field name="tipo_ingreso_renta"/>
                             </group>
                         </group>
                     </sheet>

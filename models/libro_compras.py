@@ -52,7 +52,9 @@ class LibroComprasPeriodo(models.Model):
         compute='_compute_periodo',
         store=True,
     )
-
+    
+    _rec_name = 'periodo'  # Para que el título muestre el periodo completo
+    
     state = fields.Selection([
         ('draft', 'Borrador'),
         ('validated', 'Validado'),
@@ -101,7 +103,8 @@ class LibroComprasPeriodo(models.Model):
                     '05': 'Mayo', '06': 'Junio', '07': 'Julio', '08': 'Agosto',
                     '09': 'Septiembre', '10': 'Octubre', '11': 'Noviembre', '12': 'Diciembre'
                 }
-                rec.periodo = f"{month_names.get(rec.month, '')} {rec.year}"
+                # Incluir "Libro Compras -" al inicio del título
+                rec.periodo = f"Libro Compras - {rec.year} - {month_names.get(rec.month, '')} {rec.year}"
             else:
                 rec.periodo = ''
 
@@ -309,7 +312,7 @@ class LibroComprasPeriodo(models.Model):
                 'codigo_mh': codigo_mh,
                 'tipo_documento': tipo_documento,
                 'dcl': dcl,
-                'numero_documento': numero_documento,
+                'numero_documento': inv.ref or inv.name,  # Usar referencia de factura
                 'numero_control': numero_control,
                 'codigo_generacion': codigo_generacion,
                 'sello_digital': sello_digital,
@@ -414,7 +417,7 @@ class LibroComprasPeriodo(models.Model):
         # Encabezados
         headers = [
             'No', 'Fecha Emisión', 'Código MH', 'Tipo de Documento', 'DCL',
-            'Número de Documento', 'Número de Control', 'Código de Generación',
+            'Referencia de Factura', 'Número de Control', 'Código de Generación',
             'Sello Digital', 'Proveedor', 'Internas Exentas', 'Internas Gravadas',
             'Crédito Fiscal', 'Total'
         ]
@@ -484,13 +487,13 @@ class LibroComprasPeriodo(models.Model):
             # C - Tipo de Documento (2 caracteres)
             tipo_doc = line.tipo_documento or '03'
             
-            # D - Número de Documento (Código Generación sin guiones para DTE)
+            # D - Número de Documento (Código Generación sin guiones para DTE, o Referencia de Factura)
             if line.codigo_generacion:
                 numero_doc = line.codigo_generacion.replace('-', '')
             elif line.numero_control:
                 numero_doc = line.numero_control.replace('-', '')
             else:
-                numero_doc = line.numero_documento or ''
+                numero_doc = line.numero_documento or ''  # Contiene la referencia de factura (ref)
             
             # E - NIT o NRC del Proveedor (sin guiones)
             nit_nrc = (line.partner_nit or '').replace('-', '')

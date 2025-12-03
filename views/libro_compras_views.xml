@@ -61,7 +61,7 @@
                                         <field name="currency_id" column_invisible="1"/>
                                         <field name="sequence" string="No"/>
                                         <field name="invoice_date"/>
-                                        <field name="numero_documento"/>
+                                        <field name="numero_documento" string="Referencia de Factura"/>
                                         <field name="numero_control" optional="hide"/>
                                         <field name="codigo_generacion"/>
                                         <field name="sello_digital" optional="hide"/>

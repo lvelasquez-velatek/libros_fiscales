@@ -65,8 +65,9 @@
                                     <button name="action_unselect_all" string="Deseleccionar Todo" type="object" class="btn btn-secondary btn-sm"/>
                                 </div>
                                 <field name="invoice_line_ids" readonly="state == 'validated'">
-                                    <list string="Facturas" create="false">
+                                    <list string="Facturas" create="false" decoration-danger="no_emitida">
                                         <field name="currency_id" column_invisible="1"/>
+                                        <field name="no_emitida" column_invisible="1"/>
                                         <field name="sequence" string="ID" readonly="1"/>
                                         <field name="move_id" string="Factura" optional="show"/>
                                         <field name="invoice_date"/>

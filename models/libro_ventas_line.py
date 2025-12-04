@@ -128,3 +128,25 @@ class LibroVentasLine(models.Model):
     )
 
     select = fields.Boolean(string='Seleccionar')
+    
+    # Campo para detectar si la factura NO está emitida a Hacienda
+    no_emitida = fields.Boolean(
+        string='No Emitida',
+        compute='_compute_no_emitida',
+        store=True,
+        help='Indica si la factura no ha sido emitida a Hacienda (sin sello de recepción)'
+    )
+    
+    @api.depends('codigo_generacion', 'numero_control', 'sello_recepcion')
+    def _compute_no_emitida(self):
+        """
+        Una factura NO está emitida a Hacienda si:
+        - Tiene código de generación Y número de control (es DTE electrónico)
+        - PERO NO tiene sello de recepción
+        """
+        for rec in self:
+            # Si tiene código de generación y número de control pero NO sello
+            if rec.codigo_generacion and rec.numero_control and not rec.sello_recepcion:
+                rec.no_emitida = True
+            else:
+                rec.no_emitida = False

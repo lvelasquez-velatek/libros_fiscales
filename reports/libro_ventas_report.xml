@@ -17,6 +17,7 @@
             <t t-call="web.html_container">
                 <t t-foreach="docs" t-as="o">
                     <div class="page" style="font-family: Arial, sans-serif; font-size: 10pt; page-size: landscape; margin: 0.5cm;">
+                        <meta charset="UTF-8"/>
                         <style>
                             @page {
                                 size: letter landscape;
@@ -157,15 +158,14 @@
                     <!-- FIRMA -->
                     <div style="margin-top: 50px; font-size: 9pt;">
                         <div style="margin-bottom: 30px;">
+                            <p style="margin-top: 20px;">CONTADOR: <t t-esc="o.contador_name or '________________________________'"/>
+                            </p>
                             <p style="margin: 0;">FIRMA: ________________________________</p>
-                            <p style="margin-top: 20px;">CONTADOR: ________________________________</p>
                         </div>
                     </div>
-
                 </div>
             </t>
         </t>
     </template>
-
 </data>
 </odoo>

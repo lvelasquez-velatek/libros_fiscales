@@ -18,6 +18,7 @@
         <template id="report_libro_compras_template">
             <t t-call="web.html_container">
                 <div class="page" style="font-family: Arial, sans-serif; font-size: 10pt; page-size: landscape; margin: 0.5cm;">
+                    <meta charset="UTF-8"/>
                     <style>
                         @page {
                             size: letter landscape;
@@ -136,12 +137,12 @@
 
                 <!-- FIRMA -->
                 <div style="margin-top: 40px; font-size: 9pt;">
+                    <p>CONTADOR: <t t-esc="docs[0].contador_name or '________________________________'"/>
+                    </p>
                     <p>FIRMA: ________________________________</p>
-                    <p>CONTADOR: ________________________________</p>
                 </div>
             </div>
         </t>
     </template>
-
 </data>
 </odoo>
